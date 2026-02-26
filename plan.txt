@@ -1,0 +1,7 @@
+目标：
+CRUD 完整
+Pydantic schema
+正确状态码
+Tests
+README
+Analytics
