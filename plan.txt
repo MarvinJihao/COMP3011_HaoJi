@@ -5,3 +5,29 @@ Pydantic schema
 Tests
 README
 Analytics
+
+
+
+wildfire-api/
+  app/
+    main.py
+    core/
+      config.py
+    db/
+      base.py
+      session.py
+    models/
+      fire_event.py
+    schemas/
+      fire_event.py
+    crud/
+      fire_event.py
+    api/
+      deps.py
+      routes/
+        fire_events.py
+  tests/
+    test_fire_events.py
+  alembic.ini
+  README.md
+  requirements.txt
