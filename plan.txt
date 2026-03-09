@@ -31,3 +31,18 @@ wildfire-api/
   alembic.ini
   README.md
   requirements.txt
+
+
+
+
+API1: NASA EONET 环境灾害事件
+doc:https://eonet.gsfc.nasa.gov/docs/v3
+https://eonet.gsfc.nasa.gov/how-to-guide
+
+
+API2: USGS Earthquake API（地震）
+
+
+
+API3: OpenWeatherMap（天气）
+

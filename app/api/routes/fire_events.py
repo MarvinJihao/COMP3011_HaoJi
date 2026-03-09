@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
@@ -30,9 +32,33 @@ def create_fire_event_endpoint(
 def list_fire_events_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    type: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    severity_min: int | None = Query(default=None, ge=1, le=5),
+    severity_max: int | None = Query(default=None, ge=1, le=5),
+    start_time: datetime | None = Query(default=None),
+    end_time: datetime | None = Query(default=None),
+    min_lat: float | None = Query(default=None, ge=-90, le=90),
+    max_lat: float | None = Query(default=None, ge=-90, le=90),
+    min_lon: float | None = Query(default=None, ge=-180, le=180),
+    max_lon: float | None = Query(default=None, ge=-180, le=180),
     db: Session = Depends(get_db),
 ):
-    return list_fire_events(db, skip=skip, limit=limit)
+    return list_fire_events(
+        db,
+        skip=skip,
+        limit=limit,
+        type=type,
+        source=source,
+        severity_min=severity_min,
+        severity_max=severity_max,
+        start_time=start_time,
+        end_time=end_time,
+        min_lat=min_lat,
+        max_lat=max_lat,
+        min_lon=min_lon,
+        max_lon=max_lon,
+    )
 
 
 @router.get("/fire-events/{event_id}", response_model=FireEventRead)
