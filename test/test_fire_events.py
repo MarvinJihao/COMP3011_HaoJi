@@ -104,3 +104,48 @@ def test_sync_eonet_wildfires_with_mock(monkeypatch):
         assert event.event_time.date().isoformat() == "2026-03-01"
     finally:
         db.close()
+
+
+def test_sync_usgs_earthquakes_with_mock(monkeypatch):
+    client, SessionLocal = _build_client()
+
+    class MockResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "features": [
+                    {
+                        "id": "us7000mock",
+                        "properties": {
+                            "title": "M 4.5 - Test Region",
+                            "place": "Test Region",
+                            "mag": 4.5,
+                            "net": "us",
+                            "time": 1772409600000,
+                        },
+                        "geometry": {"type": "Point", "coordinates": [120.5, 23.5, 10.0]},
+                    }
+                ]
+            }
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr("app.api.routes.ingest.httpx.get", mock_get)
+    response = client.post("/ingest/usgs/earthquakes/sync")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["inserted"] == 1
+
+    db = SessionLocal()
+    try:
+        event = db.query(FireEvent).first()
+        assert event is not None
+        assert event.type == "earthquake"
+        assert event.source == "us"
+        assert event.latitude == 23.5
+        assert event.longitude == 120.5
+    finally:
+        db.close()

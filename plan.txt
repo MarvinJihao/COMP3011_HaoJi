@@ -35,21 +35,41 @@ wildfire-api/
 
 
 
-API1: NASA EONET 环境灾害事件
-doc:https://eonet.gsfc.nasa.gov/docs/v3
-https://eonet.gsfc.nasa.gov/how-to-guide
-  demo展示顺序: 
-    1. preview external data: GET /ingest/eonet/wildfires/preview
-    2. ingest 数据:  POST /ingest/eonet/wildfires/sync
-    3. 查看数据库 GET /fire-events
-    4. analytics: GET /analytics/summary / GET /analytics/timeseries/daily / GET /analytics/hotspots
+External API:
+
+  API1: NASA EONET 环境灾害事件
+  doc: https://eonet.gsfc.nasa.gov/docs/v3
+  https://eonet.gsfc.nasa.gov/how-to-guide
+    demo展示顺序: 
+      1. preview external data: GET /ingest/eonet/wildfires/preview
+      2. ingest 数据:  POST /ingest/eonet/wildfires/sync
+      3. 查看数据库 GET /fire-events
+      4. analytics: GET /analytics/summary / GET /analytics/timeseries/daily / GET /analytics/hotspots
+
+
+  API2: USGS Earthquake API（地震）
+  doc: https://earthquake.usgs.gov/fdsnws/event/1/
+
+
+  API3: OpenWeatherMap（天气）
 
 
 
 
-API2: USGS Earthquake API（地震）
+- CRUD
+POST /fire-events
+GET /fire-events
+GET /fire-events/{id}
+PUT /fire-events/{id}
+PATCH /fire-events/{id}
+DELETE /fire-events/{id}
 
+- External API
+POST /ingest/eonet/wildfires/sync
+POST /ingest/usgs/earthquakes/sync
+GET  /ingest/eonet/wildfires/preview
 
-
-API3: OpenWeatherMap（天气）
-
+- Analytics
+GET /analytics/summary
+GET /analytics/timeseries/daily
+GET /analytics/hotspots

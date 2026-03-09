@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -12,6 +12,7 @@ from app.schemas.fire_event import FireEventCreate
 router = APIRouter()
 
 EONET_EVENTS_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
+USGS_QUERY_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 
 def _parse_event_time(geometry: list[dict[str, Any]]) -> datetime:
@@ -62,6 +63,24 @@ def _severity_from_magnitude(magnitude_value: Any) -> int:
     if value < 100:
         return 3
     if value < 200:
+        return 4
+    return 5
+
+
+def _severity_from_earthquake_mag(mag: Any) -> int:
+    if mag is None:
+        return 2
+    try:
+        value = float(mag)
+    except (TypeError, ValueError):
+        return 2
+    if value < 2.5:
+        return 1
+    if value < 4.0:
+        return 2
+    if value < 5.5:
+        return 3
+    if value < 7.0:
         return 4
     return 5
 
@@ -187,3 +206,99 @@ def preview_eonet_wildfires(
             }
         )
     return {"count": len(samples), "events": samples}
+
+
+@router.post(
+    "/ingest/usgs/earthquakes/sync",
+    status_code=status.HTTP_200_OK,
+)
+def sync_usgs_earthquakes(
+    days: int = Query(default=30, ge=1, le=365),
+    min_magnitude: float = Query(default=2.5, ge=-1, le=10),
+    limit: int = Query(default=500, ge=1, le=20000),
+    db: Session = Depends(get_db),
+):
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time.replace(microsecond=0) - timedelta(days=days)
+
+    params = {
+        "format": "geojson",
+        "starttime": start_time.isoformat().replace("+00:00", "Z"),
+        "endtime": end_time.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "minmagnitude": min_magnitude,
+        "limit": limit,
+        "orderby": "time",
+    }
+
+    try:
+        response = httpx.get(USGS_QUERY_URL, params=params, timeout=30.0)
+        response.raise_for_status()
+        payload = response.json()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to fetch USGS Earthquake data: {exc}",
+        ) from exc
+
+    features = payload.get("features", [])
+    inserted = 0
+    skipped = 0
+    failed = 0
+
+    for item in features:
+        try:
+            properties = item.get("properties") or {}
+            geometry = item.get("geometry") or {}
+            coordinates = geometry.get("coordinates") or []
+            if len(coordinates) < 2:
+                failed += 1
+                continue
+
+            lon = float(coordinates[0])
+            lat = float(coordinates[1])
+            ms = properties.get("time")
+            if ms is None:
+                failed += 1
+                continue
+            event_time = datetime.fromtimestamp(float(ms) / 1000, tz=timezone.utc).replace(
+                tzinfo=None
+            )
+
+            source_id = properties.get("net") or "USGS"
+            title = properties.get("title") or properties.get("place") or "Untitled earthquake"
+
+            existing = find_existing_event(
+                db,
+                title=title,
+                event_time=event_time,
+                source=source_id,
+            )
+            if existing:
+                skipped += 1
+                continue
+
+            create_fire_event(
+                db,
+                FireEventCreate(
+                    title=title,
+                    type="earthquake",
+                    latitude=lat,
+                    longitude=lon,
+                    severity=_severity_from_earthquake_mag(properties.get("mag")),
+                    source=source_id,
+                    event_time=event_time,
+                ),
+            )
+            inserted += 1
+        except Exception:
+            failed += 1
+
+    return {
+        "provider": "USGS FDSN Event API",
+        "event_type": "earthquake",
+        "requested": len(features),
+        "inserted": inserted,
+        "skipped_existing": skipped,
+        "failed": failed,
+        "filters": params,
+    }
