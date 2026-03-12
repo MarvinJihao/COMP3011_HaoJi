@@ -56,6 +56,16 @@ project/
 └── requirements.txt
 ```
 
+---
+## Deployment
+
+The API is deployed on Render and can be accessed publicly.
+
+Base URL:
+https://comp3011haoji.onrender.com
+
+Interactive documentation (Swagger UI):
+https://comp3011haoji.onrender.com/docs
 
 ---
 
@@ -214,3 +224,4 @@ For the coursework submission, this repository should be accompanied by:
 - technical report
 - GenAI declaration
 - presentation slides
+
