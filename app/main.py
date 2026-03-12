@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
+from app.api.deps import require_basic_auth
 from app.api.routes.analytics import router as analytics_router
 from app.api.routes.fire_events import router as fire_router
 from app.api.routes.health import router as health_router
@@ -10,9 +11,21 @@ from app.models import fire_event
 
 app = FastAPI(title="Wildfire API")
 
-app.include_router(fire_router, tags=["Fire Events"])
-app.include_router(ingest_router, tags=["Ingest"])
-app.include_router(analytics_router, tags=["Analytics"])
+app.include_router(
+    fire_router,
+    tags=["Fire Events"],
+    dependencies=[Depends(require_basic_auth)],
+)
+app.include_router(
+    ingest_router,
+    tags=["Ingest"],
+    dependencies=[Depends(require_basic_auth)],
+)
+app.include_router(
+    analytics_router,
+    tags=["Analytics"],
+    dependencies=[Depends(require_basic_auth)],
+)
 app.include_router(health_router, tags=["Health"])
 
 Base.metadata.create_all(bind=engine)
