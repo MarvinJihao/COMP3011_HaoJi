@@ -29,7 +29,7 @@ This project was developed for COMP3011 Coursework 1.
 
 ## Tech Stack
 
-- Python 3.9+
+- Python 3.10+
 - FastAPI
 - SQLAlchemy 2.x
 - Pydantic 2.x
