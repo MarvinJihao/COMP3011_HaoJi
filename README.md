@@ -15,13 +15,14 @@ This project was developed for `COMP3011 Coursework 1`.
 
 ## Main Features
 
-- Full CRUD API for the `fire_events` data model
+- Full CRUD API for the `disaster_events` core data model
 - SQLite database persistence
 - HTTP Basic Authentication for protected endpoints
 - Input validation with Pydantic
 - Filtering by source, type, severity, time, and location
 - Analytics endpoints for summaries, daily trends, and hotspots
 - External ingestion endpoints for NASA EONET and USGS earthquake data
+- Source metadata and ingestion history tracking
 - Automatic interactive API documentation through FastAPI Swagger UI
 
 ## Tech Stack
@@ -98,38 +99,47 @@ The API will usually be available at:
 
 ## Data Model
 
-The main database table is `fire_events`.
+The main database table is `disaster_events`.
+The domain model now uses three main tables:
 
-Fields:
+- `disaster_events` for the core event records
+- `source_metadata` for registered upstream sources
+- `ingest_runs` for synchronization history and auditability
+
+`disaster_events` fields:
 
 - `id`
 - `title`
-- `type`
+- `event_type`
 - `latitude`
 - `longitude`
 - `severity`
-- `source`
+- `source_id`
+- `external_id`
 - `event_time`
 - `created_at`
-
-Although the table name is `fire_events`, it currently stores both wildfire and earthquake records.
 
 ## API Endpoints
 
 ### CRUD Endpoints
 
-- `POST /fire-events`
-- `GET /fire-events`
-- `GET /fire-events/{event_id}`
-- `PUT /fire-events/{event_id}`
-- `PATCH /fire-events/{event_id}`
-- `DELETE /fire-events/{event_id}`
+- `POST /events`
+- `GET /events`
+- `GET /events/{event_id}`
+- `PUT /events/{event_id}`
+- `PATCH /events/{event_id}`
+- `DELETE /events/{event_id}`
 
 ### Ingestion Endpoints
 
 - `GET /ingest/eonet/wildfires/preview`
 - `POST /ingest/eonet/wildfires/sync`
 - `POST /ingest/usgs/earthquakes/sync`
+- `GET /ingest/runs`
+
+### Metadata Endpoints
+
+- `GET /sources`
 
 ### Analytics Endpoints
 
@@ -148,7 +158,7 @@ This project uses HTTP Basic Authentication for protected endpoints.
 
 Protected endpoint groups:
 
-- `/fire-events`
+- `/events`
 - `/ingest`
 - `/analytics`
 
@@ -180,7 +190,7 @@ In Swagger UI:
 Create a local event:
 
 ```json
-POST /fire-events
+POST /events
 {
   "title": "Test Wildfire",
   "type": "wildfire",
@@ -195,7 +205,7 @@ POST /fire-events
 Query filtered events:
 
 ```text
-GET /fire-events?type=wildfire&source=InciWeb&severity_min=2&limit=20
+GET /events?type=wildfire&source=InciWeb&severity_min=2&limit=20
 ```
 
 Sync wildfire data from NASA EONET:
@@ -247,10 +257,18 @@ Current tests cover:
 
 - CRUD creation and filtered reads
 - protected endpoint authentication
+- invalid Basic Auth rejection
 - public health endpoint access
+- database health failure handling
+- invalid payload validation
+- boundary value validation
 - NASA EONET ingestion with mocked upstream data
+- duplicate EONET ingestion handling
+- external API failure handling for EONET and USGS
 - USGS earthquake ingestion with mocked upstream data
+- source metadata and ingestion history persistence
 - analytics summary, timeseries, and hotspot endpoints
+- analytics correctness with controlled fixtures and date filters
 
 ## API Documentation
 
@@ -267,6 +285,7 @@ A PDF copy of the API documentation should be included for submission:
 This project addresses the coursework requirements in the following ways:
 
 - at least one SQL-backed data model with full CRUD support
+- clearer domain modelling with source and ingestion audit tables
 - more than four HTTP endpoints
 - JSON request and response handling
 - appropriate HTTP status and error handling
@@ -279,7 +298,6 @@ This project addresses the coursework requirements in the following ways:
 
 - The database currently uses SQLite for simplicity and local demonstration.
 - External ingestion depends on the availability of NASA EONET and USGS services.
-- The table name `fire_events` is broader in use than its name suggests, because it also stores earthquake records.
 - Basic Authentication uses fixed credentials unless overridden with environment variables.
 
 ## Submission Notes

@@ -3,33 +3,37 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.crud.fire_event import (
-    create_fire_event,
-    delete_fire_event,
-    get_fire_event,
-    list_fire_events,
-    update_fire_event,
+from app.crud.disaster_event import (
+    create_disaster_event,
+    delete_disaster_event,
+    get_disaster_event,
+    list_disaster_events,
+    update_disaster_event,
 )
 from app.db.session import get_db
-from app.schemas.fire_event import FireEventCreate, FireEventRead, FireEventUpdate
+from app.schemas.disaster_event import (
+    DisasterEventCreate,
+    DisasterEventRead,
+    DisasterEventUpdate,
+)
 
 router = APIRouter()
 
 
 @router.post(
-    "/fire-events",
-    response_model=FireEventRead,
+    "/events",
+    response_model=DisasterEventRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_fire_event_endpoint(
-    payload: FireEventCreate,
+def create_event_endpoint(
+    payload: DisasterEventCreate,
     db: Session = Depends(get_db),
 ):
-    return create_fire_event(db, payload)
+    return create_disaster_event(db, payload)
 
 
-@router.get("/fire-events", response_model=list[FireEventRead])
-def list_fire_events_endpoint(
+@router.get("/events", response_model=list[DisasterEventRead])
+def list_events_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     type: str | None = Query(default=None),
@@ -44,7 +48,7 @@ def list_fire_events_endpoint(
     max_lon: float | None = Query(default=None, ge=-180, le=180),
     db: Session = Depends(get_db),
 ):
-    return list_fire_events(
+    return list_disaster_events(
         db,
         skip=skip,
         limit=limit,
@@ -61,48 +65,48 @@ def list_fire_events_endpoint(
     )
 
 
-@router.get("/fire-events/{event_id}", response_model=FireEventRead)
-def get_fire_event_endpoint(
+@router.get("/events/{event_id}", response_model=DisasterEventRead)
+def get_event_endpoint(
     event_id: int,
     db: Session = Depends(get_db),
 ):
-    event = get_fire_event(db, event_id)
+    event = get_disaster_event(db, event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fire event not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return event
 
 
-@router.put("/fire-events/{event_id}", response_model=FireEventRead)
-def replace_fire_event_endpoint(
+@router.put("/events/{event_id}", response_model=DisasterEventRead)
+def replace_event_endpoint(
     event_id: int,
-    payload: FireEventCreate,
+    payload: DisasterEventCreate,
     db: Session = Depends(get_db),
 ):
-    event = get_fire_event(db, event_id)
+    event = get_disaster_event(db, event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fire event not found")
-    return update_fire_event(db, event, payload, partial=False)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return update_disaster_event(db, event, payload, partial=False)
 
 
-@router.patch("/fire-events/{event_id}", response_model=FireEventRead)
-def patch_fire_event_endpoint(
+@router.patch("/events/{event_id}", response_model=DisasterEventRead)
+def patch_event_endpoint(
     event_id: int,
-    payload: FireEventUpdate,
+    payload: DisasterEventUpdate,
     db: Session = Depends(get_db),
 ):
-    event = get_fire_event(db, event_id)
+    event = get_disaster_event(db, event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fire event not found")
-    return update_fire_event(db, event, payload, partial=True)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return update_disaster_event(db, event, payload, partial=True)
 
 
-@router.delete("/fire-events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_fire_event_endpoint(
+@router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_event_endpoint(
     event_id: int,
     db: Session = Depends(get_db),
 ):
-    event = get_fire_event(db, event_id)
+    event = get_disaster_event(db, event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fire event not found")
-    delete_fire_event(db, event)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    delete_disaster_event(db, event)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

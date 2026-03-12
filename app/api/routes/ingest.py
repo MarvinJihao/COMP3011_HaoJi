@@ -5,9 +5,16 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.crud.fire_event import create_fire_event, find_existing_event
+from app.crud.disaster_event import (
+    create_disaster_event,
+    find_existing_event,
+    list_sources,
+)
+from app.crud.ingest_run import complete_ingest_run, create_ingest_run, list_ingest_runs
 from app.db.session import get_db
-from app.schemas.fire_event import FireEventCreate
+from app.schemas.disaster_event import DisasterEventCreate
+from app.schemas.ingest_run import IngestRunRead
+from app.schemas.source_metadata import SourceMetadataRead
 
 router = APIRouter()
 
@@ -101,12 +108,28 @@ def sync_eonet_wildfires(
         "limit": limit,
         "status": status_filter,
     }
+    run = create_ingest_run(
+        db,
+        provider="NASA EONET v3",
+        dataset="wildfires",
+        filters=params,
+    )
 
     try:
         response = httpx.get(EONET_EVENTS_URL, params=params, timeout=30.0)
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as exc:
+        complete_ingest_run(
+            db,
+            run,
+            status="failed",
+            requested_count=0,
+            inserted_count=0,
+            skipped_count=0,
+            failed_count=0,
+            message=str(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch NASA EONET data: {exc}",
@@ -137,21 +160,33 @@ def sync_eonet_wildfires(
                 skipped += 1
                 continue
 
-            create_fire_event(
+            create_disaster_event(
                 db,
-                FireEventCreate(
+                DisasterEventCreate(
                     title=title,
                     type="wildfire",
                     latitude=lat,
                     longitude=lon,
                     severity=severity,
                     source=source_id,
+                    external_id=item.get("id"),
                     event_time=event_time,
                 ),
+                source_provider="NASA EONET v3",
             )
             inserted += 1
         except Exception:
             failed += 1
+
+    complete_ingest_run(
+        db,
+        run,
+        status="completed",
+        requested_count=len(events),
+        inserted_count=inserted,
+        skipped_count=skipped,
+        failed_count=failed,
+    )
 
     return {
         "provider": "NASA EONET v3",
@@ -229,12 +264,28 @@ def sync_usgs_earthquakes(
         "limit": limit,
         "orderby": "time",
     }
+    run = create_ingest_run(
+        db,
+        provider="USGS FDSN Event API",
+        dataset="earthquakes",
+        filters=params,
+    )
 
     try:
         response = httpx.get(USGS_QUERY_URL, params=params, timeout=30.0)
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as exc:
+        complete_ingest_run(
+            db,
+            run,
+            status="failed",
+            requested_count=0,
+            inserted_count=0,
+            skipped_count=0,
+            failed_count=0,
+            message=str(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch USGS Earthquake data: {exc}",
@@ -277,21 +328,33 @@ def sync_usgs_earthquakes(
                 skipped += 1
                 continue
 
-            create_fire_event(
+            create_disaster_event(
                 db,
-                FireEventCreate(
+                DisasterEventCreate(
                     title=title,
                     type="earthquake",
                     latitude=lat,
                     longitude=lon,
                     severity=_severity_from_earthquake_mag(properties.get("mag")),
                     source=source_id,
+                    external_id=item.get("id"),
                     event_time=event_time,
                 ),
+                source_provider="USGS FDSN Event API",
             )
             inserted += 1
         except Exception:
             failed += 1
+
+    complete_ingest_run(
+        db,
+        run,
+        status="completed",
+        requested_count=len(features),
+        inserted_count=inserted,
+        skipped_count=skipped,
+        failed_count=failed,
+    )
 
     return {
         "provider": "USGS FDSN Event API",
@@ -302,3 +365,18 @@ def sync_usgs_earthquakes(
         "failed": failed,
         "filters": params,
     }
+
+
+@router.get("/sources", response_model=list[SourceMetadataRead])
+def list_registered_sources(db: Session = Depends(get_db)):
+    return list_sources(db)
+
+
+@router.get("/ingest/runs", response_model=list[IngestRunRead])
+def list_ingestion_runs(
+    provider: str | None = Query(default=None),
+    dataset: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    return list_ingest_runs(db, provider=provider, dataset=dataset, limit=limit)

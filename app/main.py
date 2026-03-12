@@ -7,13 +7,13 @@ from app.api.routes.health import router as health_router
 from app.api.routes.ingest import router as ingest_router
 from app.db.base import Base
 from app.db.session import engine
-from app.models import fire_event
+from app.models import disaster_event, ingest_run, source_metadata
 
-app = FastAPI(title="Wildfire API")
+app = FastAPI(title="Disaster Event Intelligence API")
 
 app.include_router(
     fire_router,
-    tags=["Fire Events"],
+    tags=["Events"],
     dependencies=[Depends(require_basic_auth)],
 )
 app.include_router(

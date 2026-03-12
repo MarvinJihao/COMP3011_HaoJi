@@ -4,14 +4,19 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.crud.fire_event import (
+from app.crud.disaster_event import (
     event_counts_by_severity,
     event_counts_by_source,
     event_counts_by_type,
     total_events,
 )
 from app.db.session import get_db
-from app.models.fire_event import FireEvent
+from app.models.disaster_event import DisasterEvent
+from app.schemas.analytics import (
+    AnalyticsDailySeriesRead,
+    AnalyticsHotspotsRead,
+    AnalyticsSummaryRead,
+)
 
 router = APIRouter()
 
@@ -33,7 +38,7 @@ def _to_datetime_range(
     return start_time, end_time
 
 
-@router.get("/analytics/summary")
+@router.get("/analytics/summary", response_model=AnalyticsSummaryRead)
 def analytics_summary(
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
@@ -41,8 +46,8 @@ def analytics_summary(
 ):
     start_time, end_time = _to_datetime_range(start_date, end_date)
 
-    latest = db.query(func.max(FireEvent.event_time)).scalar()
-    oldest = db.query(func.min(FireEvent.event_time)).scalar()
+    latest = db.query(func.max(DisasterEvent.event_time)).scalar()
+    oldest = db.query(func.min(DisasterEvent.event_time)).scalar()
     total = total_events(db, start_time=start_time, end_time=end_time)
 
     by_type = event_counts_by_type(db, start_time=start_time, end_time=end_time)
@@ -63,7 +68,7 @@ def analytics_summary(
     }
 
 
-@router.get("/analytics/timeseries/daily")
+@router.get("/analytics/timeseries/daily", response_model=AnalyticsDailySeriesRead)
 def analytics_daily_timeseries(
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
@@ -71,19 +76,19 @@ def analytics_daily_timeseries(
 ):
     start_time, end_time = _to_datetime_range(start_date, end_date)
 
-    query = db.query(func.date(FireEvent.event_time), func.count(FireEvent.id)).group_by(
-        func.date(FireEvent.event_time)
+    query = db.query(func.date(DisasterEvent.event_time), func.count(DisasterEvent.id)).group_by(
+        func.date(DisasterEvent.event_time)
     )
     if start_time:
-        query = query.filter(FireEvent.event_time >= start_time)
+        query = query.filter(DisasterEvent.event_time >= start_time)
     if end_time:
-        query = query.filter(FireEvent.event_time <= end_time)
+        query = query.filter(DisasterEvent.event_time <= end_time)
 
-    rows = query.order_by(func.date(FireEvent.event_time).asc()).all()
+    rows = query.order_by(func.date(DisasterEvent.event_time).asc()).all()
     return {"series": [{"date": d, "count": c} for d, c in rows]}
 
 
-@router.get("/analytics/hotspots")
+@router.get("/analytics/hotspots", response_model=AnalyticsHotspotsRead)
 def analytics_hotspots(
     precision: int = Query(default=1, ge=0, le=3),
     top_n: int = Query(default=10, ge=1, le=100),
@@ -93,22 +98,22 @@ def analytics_hotspots(
 ):
     start_time, end_time = _to_datetime_range(start_date, end_date)
 
-    lat_bucket = func.round(FireEvent.latitude, precision)
-    lon_bucket = func.round(FireEvent.longitude, precision)
+    lat_bucket = func.round(DisasterEvent.latitude, precision)
+    lon_bucket = func.round(DisasterEvent.longitude, precision)
 
     query = db.query(
         lat_bucket.label("lat"),
         lon_bucket.label("lon"),
-        func.count(FireEvent.id).label("count"),
+        func.count(DisasterEvent.id).label("count"),
     )
     if start_time:
-        query = query.filter(FireEvent.event_time >= start_time)
+        query = query.filter(DisasterEvent.event_time >= start_time)
     if end_time:
-        query = query.filter(FireEvent.event_time <= end_time)
+        query = query.filter(DisasterEvent.event_time <= end_time)
 
     rows = (
         query.group_by(lat_bucket, lon_bucket)
-        .order_by(func.count(FireEvent.id).desc())
+        .order_by(func.count(DisasterEvent.id).desc())
         .limit(top_n)
         .all()
     )

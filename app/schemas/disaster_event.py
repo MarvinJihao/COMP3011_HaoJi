@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class FireEventBase(BaseModel):
+class DisasterEventBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     type: str = Field(..., min_length=1, max_length=100)
     latitude: float = Field(..., ge=-90, le=90)
@@ -14,11 +14,11 @@ class FireEventBase(BaseModel):
     event_time: datetime
 
 
-class FireEventCreate(FireEventBase):
-    pass
+class DisasterEventCreate(DisasterEventBase):
+    external_id: Optional[str] = Field(default=None, max_length=150)
 
 
-class FireEventUpdate(BaseModel):
+class DisasterEventUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     type: Optional[str] = Field(default=None, min_length=1, max_length=100)
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
@@ -26,11 +26,12 @@ class FireEventUpdate(BaseModel):
     severity: Optional[int] = Field(default=None, ge=1, le=5)
     source: Optional[str] = Field(default=None, min_length=1, max_length=100)
     event_time: Optional[datetime] = None
-    
+    external_id: Optional[str] = Field(default=None, max_length=150)
 
 
-class FireEventRead(FireEventBase):
+class DisasterEventRead(DisasterEventBase):
     id: int
+    external_id: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
