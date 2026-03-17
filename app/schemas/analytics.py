@@ -50,3 +50,19 @@ class HotspotPoint(BaseModel):
 
 class AnalyticsHotspotsRead(BaseModel):
     hotspots: list[HotspotPoint]
+
+
+class EventRiskRead(BaseModel):
+    event_id: int
+    title: str
+    type: str
+    source: str | None = None
+    severity: int
+    event_time: datetime
+    risk_score: float
+    risk_level: str
+    factors: dict[str, float]
+
+
+class EventRiskListRead(BaseModel):
+    items: list[EventRiskRead]

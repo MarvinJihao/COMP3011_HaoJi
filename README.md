@@ -21,6 +21,7 @@ This project was developed for `COMP3011 Coursework 1`.
 - Input validation with Pydantic
 - Filtering by source, type, severity, time, and location
 - Analytics endpoints for summaries, daily trends, and hotspots
+- Risk assessment endpoint for prioritising higher-risk events
 - External ingestion endpoints for NASA EONET and USGS earthquake data
 - Source metadata and ingestion history tracking
 - Automatic interactive API documentation through FastAPI Swagger UI
@@ -56,8 +57,8 @@ project/
 
 The API is deployed on Render.
 
-- Base URL: `https://comp3011haoji.onrender.com`
-- Swagger UI: `https://comp3011haoji.onrender.com/docs`
+- Base URL: `https://jihaomarvin.pythonanywhere.com`
+- Swagger UI: `https://jihaomarvin.pythonanywhere.com/docs`
 
 ## Setup
 
@@ -146,6 +147,7 @@ The domain model now uses three main tables:
 - `GET /analytics/summary`
 - `GET /analytics/timeseries/daily`
 - `GET /analytics/hotspots`
+- `GET /analytics/risk-assessment`
 
 ### Health Endpoints
 
@@ -226,6 +228,12 @@ Get analytics summary:
 GET /analytics/summary
 ```
 
+Get ranked risk assessment:
+
+```text
+GET /analytics/risk-assessment?days=30&top_n=10
+```
+
 Check service health:
 
 ```text
@@ -269,12 +277,17 @@ Current tests cover:
 - source metadata and ingestion history persistence
 - analytics summary, timeseries, and hotspot endpoints
 - analytics correctness with controlled fixtures and date filters
+- risk assessment ranking and scoring behaviour
 
 ## API Documentation
 
 Interactive documentation is available at runtime through FastAPI:
 
 - `http://127.0.0.1:8000/docs`
+
+Source documentation file for coursework submission:
+
+- `docs/api_documentation.md`
 
 A PDF copy of the API documentation should be included for submission:
 

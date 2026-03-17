@@ -199,3 +199,50 @@ def test_analytics_timeseries_respects_date_filters():
     )
     assert response.status_code == 200
     assert response.json()["series"] == [{"date": "2026-03-01", "count": 2}]
+
+
+def test_analytics_risk_assessment_ranks_high_risk_events_first():
+    client = _build_client()
+
+    records = [
+        {
+            "title": "Recent Earthquake Cluster A",
+            "type": "earthquake",
+            "latitude": 40.12,
+            "longitude": 120.12,
+            "severity": 5,
+            "source": "us",
+            "event_time": "2026-03-16T11:00:00",
+        },
+        {
+            "title": "Recent Earthquake Cluster B",
+            "type": "earthquake",
+            "latitude": 40.11,
+            "longitude": 120.11,
+            "severity": 4,
+            "source": "us",
+            "event_time": "2026-03-16T12:00:00",
+        },
+        {
+            "title": "Older Wildfire",
+            "type": "wildfire",
+            "latitude": 10.0,
+            "longitude": 10.0,
+            "severity": 2,
+            "source": "InciWeb",
+            "event_time": "2026-03-01T08:00:00",
+        },
+    ]
+    for item in records:
+        r = client.post("/events", json=item)
+        assert r.status_code == 201
+
+    response = client.get("/analytics/risk-assessment", params={"days": 30, "top_n": 3})
+    assert response.status_code == 200
+    items = response.json()["items"]
+
+    assert len(items) == 3
+    assert items[0]["type"] == "earthquake"
+    assert items[0]["risk_score"] >= items[1]["risk_score"] >= items[2]["risk_score"]
+    assert items[0]["risk_level"] in {"high", "critical"}
+    assert "local_density" in items[0]["factors"]
