@@ -289,6 +289,7 @@ Source documentation file for coursework submission:
 
 - `docs/api_documentation.md`
 - `docs/system_design.md`
+- `docs/technical_report.md`
 
 A PDF copy of the API documentation should be included for submission:
 
