@@ -288,6 +288,7 @@ Interactive documentation is available at runtime through FastAPI:
 Source documentation file for coursework submission:
 
 - `docs/api_documentation.md`
+- `docs/system_design.md`
 
 A PDF copy of the API documentation should be included for submission:
 
