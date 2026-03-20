@@ -55,7 +55,7 @@ project/
 
 ## Deployment
 
-The API is deployed on Render.
+The API is deployed on PythonAnywhere.
 
 - Base URL: `https://jihaomarvin.pythonanywhere.com`
 - Swagger UI: `https://jihaomarvin.pythonanywhere.com/docs`
@@ -285,15 +285,22 @@ Interactive documentation is available at runtime through FastAPI:
 
 - `http://127.0.0.1:8000/docs`
 
-Source documentation file for coursework submission:
+Supporting documentation and submission materials are available in the `docs/` directory:
+
+- `docs/API_Documentation_HaoJi.pdf`
+- `docs/System_Design.pdf`
+- `docs/Report.pdf`
+- `docs/DemoOutput.pdf`
+- `docs/Sequences_Diagram.pdf`
+- `docs/Architecture_Diagram.png`
+- `docs/Database_ER_Diagram.png`
+- `docs/slides.pptx`
+
+Working source files used to prepare the written materials are also included:
 
 - `docs/api_documentation.md`
 - `docs/system_design.md`
 - `docs/technical_report.md`
-
-A PDF copy of the API documentation should be included for submission:
-
-- `docs/api_documentation.pdf`
 
 ## Coursework Mapping
 
@@ -320,6 +327,9 @@ This project addresses the coursework requirements in the following ways:
 For the coursework submission, this repository should be accompanied by:
 
 - API documentation PDF
-- technical report
-- GenAI declaration
+- system design PDF
+- technical report PDF
+- demo output PDF
+- sequence diagram PDF
+- architecture and ER diagrams
 - presentation slides
